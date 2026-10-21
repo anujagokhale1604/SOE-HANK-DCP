@@ -18,9 +18,9 @@ When a small open economy central bank raises rates by 100bp, two forces act on 
 | Channel | Mechanism | Direction |
 |---|---|---|
 | **Cash-flow squeeze** | Higher mortgage servicing costs reduce disposable income of indebted households | ↓ C |
-| **Expenditure-switching (DCP)** | Currency appreciation lowers import prices; real wages rise | ↑ C |
+| **Expenditure-switching** | Currency appreciation lowers import prices; real wages rise | ↑ C |
 
-The model quantifies the **net impulse response** and shows how the DCP degree (φ ∈ [0,1]) determines which channel dominates.
+The model quantifies the **net impulse response** and shows how the invoicing stickiness parameter (φ ∈ [0,1]) determines which channel dominates.
 
 ---
 
@@ -42,19 +42,25 @@ $$c_{it} + a_{it+1} = (1 + r_t) a_{it} + w_t y_{it}, \quad a_{it+1} \geq \bar{a}
 
 The borrowing constraint $\bar{a} < 0$ generates a mass of **Hand-to-Mouth** (HtM) households endogenously — those at the constraint exhibit high MPCs and drive the cash-flow channel.
 
-### Dominant Currency Pricing
+### Import Price Pass-Through
 
-Import prices are sticky in USD. Under full DCP (φ = 1), a domestic currency appreciation does not pass through to import inflation:
+Foreign exporters invoice in USD. Exchange rate pass-through to domestic import inflation is governed by:
 
 $$\pi_t^M = (1-\phi) \cdot \Delta \hat{e}_t$$
 
-where $\hat{e}_t$ is the log exchange rate (appreciation positive). This blends DCP (φ=1, no pass-through) with PCP (φ=0, full pass-through).
+where $\hat{e}_t$ is the log exchange rate (appreciation positive) and $\phi \in [0,1]$ captures invoicing currency stickiness. Under **PCP** ($\phi = 0$), pass-through is complete: a 1% appreciation lowers import inflation by 1%. Under **LCP** ($\phi = 1$), import prices are fixed in domestic currency regardless of exchange rate movements. The baseline ($\phi = 0.25$) captures partial USD invoicing as in Gopinath et al. (2020).
 
 ### Exchange Rate (UIP)
 
-$$\hat{e}_t = \mathbb{E}_t \hat{e}_{t+1} + r_t - r^*$$
+All variables are deviations from steady state; the foreign real rate $r^*$ is normalised to zero. Under real UIP (consistent with long-run PPP anchoring):
 
-Under rational expectations: $\hat{e}_t = \sum_{s \geq 0} r_{t+s}$.
+$$\hat{e}_t = \mathbb{E}_t \hat{e}_{t+1} + r_t$$
+
+Iterating forward under rational expectations with $\hat{e}_\infty \to 0$:
+
+$$\hat{e}_t = \sum_{s \geq 0} r_{t+s}$$
+
+The exchange rate appreciates today by the full present value of expected future real rates (Dornbusch overshooting).
 
 ### Taylor Rule
 
@@ -72,7 +78,7 @@ $$\pi_t^H = \beta \mathbb{E}_t \pi_{t+1}^H + \kappa \hat{Y}_t$$
 
 The household's consumption function is solved by inverting the Euler equation:
 
-$$u'(c_t) = \beta(1+r) \mathbb{E}_t[u'(c_{t+1})] \implies c_t = (u')^{-1}\!\left(\beta(1+r)\mathbb{E}_t[u'(c_{t+1})]\right)$$
+$$u'(c_t) = \beta(1+r) \mathbb{E}_t[u'(c_{t+1})] \implies c_t = (u')^{-1}\left(\beta(1+r)\mathbb{E}_t[u'(c_{t+1})]\right)$$
 
 This avoids a constrained optimisation at each grid point. Policy functions converge in ~500 iterations.
 
@@ -84,13 +90,13 @@ $$g^{\ast} = Q \cdot g^{\ast}, \quad \sum_{a,y} g^{\ast}(a,y) = 1$$
 
 ### 3. Sequence-Space Jacobians (Fake-News Algorithm)
 
-The aggregate consumption Jacobian $\mathcal{J}_{C,r}[s,t] = \partial C_s / \partial r_t$ is assembled via:
+The aggregate consumption Jacobian $\mathcal{J}_{C,r}[s,t] = \partial C_s / \partial r_t$ is assembled via the Auclert et al. (2021) fake-news decomposition:
 
 $$\mathcal{J}[s,t] = \mathbf{E}[s-t, :] \cdot \mathbf{D}[:, 1]$$
 
 where:
-- **curly-E** $\mathbf{E}[s, i]$: present-value consumption response of household-state $i$ to a cash-on-hand shock $s$ periods later (propagated via $Q$)
-- **curly-D** $\mathbf{D}[:, t]$: change in the cross-sectional distribution $t$ periods after a rate shock (lottery-method perturbation)
+- **curly-E** $\mathbf{E}[s, i]$: present-value consumption response of household-state $i$ to a cash-on-hand shock $s$ periods later (propagated via $Q'$)
+- **curly-D** $\mathbf{D}[:, t]$: change in the cross-sectional distribution $t$ periods after a rate shock (lottery-method perturbation, propagated via $Q^t$)
 
 ### 4. GE Solution (Sequence-Space DAG)
 
@@ -106,46 +112,43 @@ where $U = [\hat{Y}, \pi^H, r]$ are endogenous sequences and $Z = [\varepsilon^{
 
 ### Impulse Response Functions: 100bp Monetary Shock
 
-*DCP (φ=1) vs PCP (φ=0)*
+*φ=1 (full stickiness / LCP) vs φ=0 (PCP)*
 
 ![IRFs](plots/irf_monetary_shock.png)
 
-Under DCP, the expenditure-switching channel is **attenuated**: currency appreciation does not lower import prices, so the real income offset is smaller. The cash-flow squeeze therefore dominates — consumption contracts more persistently under DCP than PCP.
+Under full invoicing stickiness (φ=1), the expenditure-switching channel is **attenuated**: currency appreciation does not lower import prices, so the real income offset is smaller. The cash-flow squeeze therefore dominates — consumption contracts more persistently than under PCP (φ=0).
 
 ### Stationary Wealth Distribution
 
 ![Distribution](plots/stationary_distribution.png)
 
-The endogenous wealth distribution shows significant mass at the borrowing constraint — these are the HtM households whose consumption is most sensitive to the mortgage cash-flow shock.
+The endogenous wealth distribution shows significant mass at the borrowing constraint — these are the HtM households whose consumption is most sensitive to the cash-flow shock.
 
 ### Consumption Jacobian Heatmap
 
 ![Jacobian](plots/jacobian_heatmap.png)
 
-$\mathcal{J}_{C,r}[s,t]$ is lower-triangular (future rate changes do not affect past consumption). The diagonal captures the contemporaneous MPC; off-diagonal entries capture the intertemporal propagation via the distribution dynamics.
+$\mathcal{J}_{C,r}[s,t]$ is a full matrix: forward-looking households cut consumption today in anticipation of future rate hikes ($\mathcal{J}[s,t] \neq 0$ for $t > s$), while off-diagonal entries below the diagonal capture backward propagation through endogenous wealth distribution dynamics. The diagonal entries reflect the contemporaneous MPC.
 
 ---
 
 ## Repository Structure
-
-```
 SOE-HANK-DCP/
 ├── src/
-│   ├── SOE_HANK_DCP.jl         # Main module
-│   ├── parameters.jl           # @with_kw Params struct, grids, income process
-│   ├── household_block.jl      # EGM backward solver
-│   ├── steady_state.jl         # Kolmogorov forward, market clearing
-│   ├── fake_news.jl            # curly-E, curly-D, Jacobian assembly
-│   └── open_economy_dag.jl     # Taylor rule, UIP, DCP, NKPC, GE DAG
+│ ├── SOE_HANK_DCP.jl # Main module
+│ ├── parameters.jl # @with_kw Params struct, grids, income process
+│ ├── household_block.jl # EGM backward solver
+│ ├── steady_state.jl # Kolmogorov forward, market clearing
+│ ├── fake_news.jl # curly-E, curly-D, Jacobian assembly
+│ └── open_economy_dag.jl # Taylor rule, UIP, DCP, NKPC, GE DAG
 ├── test/
-│   ├── runtests.jl             # Unit tests (income process, EGM, distribution, Jacobian)
-│   └── test_jacobians.jl       # Fake-news vs. finite-difference Jacobian check
+│ ├── runtests.jl # Unit tests (income process, EGM, distribution, Jacobian)
+│ └── test_jacobians.jl # Fake-news vs. finite-difference Jacobian check
 ├── scripts/
-│   └── produce_irfs.jl         # Runs shock experiment, saves all plots
+│ └── produce_irfs.jl # Runs shock experiment, saves all plots
 ├── plots/
 ├── Project.toml
 └── README.md
-```
 
 ---
 
@@ -180,7 +183,7 @@ results = run_model(verbose=true)
 | r_ss | 0.005 | Steady-state real rate (~2% annual) |
 | α_M | 0.30 | Import share |
 | η | 1.5 | Home-import substitution elasticity |
-| φ | 0.0–1.0 | DCP degree (0=PCP, 1=full DCP) |
+| φ | 0.0–1.0 | Invoicing stickiness (0=PCP, 1=LCP/full stickiness) |
 | ϕ_π | 1.5 | Taylor rule inflation coefficient |
 | κ | 0.1 | NKPC slope |
 | n_a | 200 | Asset grid points |
