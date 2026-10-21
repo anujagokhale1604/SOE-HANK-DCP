@@ -80,7 +80,7 @@ This avoids a constrained optimisation at each grid point. Policy functions conv
 
 The stationary distribution $g^*(a, y)$ is computed via the **Young (2010) lottery method**: a sparse transition matrix $Q$ maps the distribution forward until convergence:
 
-$$g^* = Q \cdot g^*, \quad \sum_{a,y} g^*(a,y) = 1$$
+$$g^{\ast} = Q \cdot g^{\ast}, \quad \sum_{a,y} g^{\ast}(a,y) = 1$$
 
 ### 3. Sequence-Space Jacobians (Fake-News Algorithm)
 
