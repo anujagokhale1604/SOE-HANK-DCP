@@ -133,23 +133,24 @@ $\mathcal{J}_{C,r}[s,t]$ is a full matrix: forward-looking households cut consum
 ---
 
 ## Repository Structure
+```
 SOE-HANK-DCP/
 ├── src/
-│ ├── SOE_HANK_DCP.jl # Main module
-│ ├── parameters.jl # @with_kw Params struct, grids, income process
-│ ├── household_block.jl # EGM backward solver
-│ ├── steady_state.jl # Kolmogorov forward, market clearing
-│ ├── fake_news.jl # curly-E, curly-D, Jacobian assembly
-│ └── open_economy_dag.jl # Taylor rule, UIP, DCP, NKPC, GE DAG
+│   ├── SOE_HANK_DCP.jl         # Main module
+│   ├── parameters.jl           # @with_kw Params struct, grids, income process
+│   ├── household_block.jl      # EGM backward solver
+│   ├── steady_state.jl         # Kolmogorov forward, market clearing
+│   ├── fake_news.jl            # curly-E, curly-D, Jacobian assembly
+│   └── open_economy_dag.jl     # Taylor rule, UIP, DCP, NKPC, GE DAG
 ├── test/
-│ ├── runtests.jl # Unit tests (income process, EGM, distribution, Jacobian)
-│ └── test_jacobians.jl # Fake-news vs. finite-difference Jacobian check
+│   ├── runtests.jl             # Unit tests
+│   └── test_jacobians.jl       # Fake-news vs. finite-difference Jacobian check
 ├── scripts/
-│ └── produce_irfs.jl # Runs shock experiment, saves all plots
+│   └── produce_irfs.jl         # Runs shock experiment, saves all plots
 ├── plots/
 ├── Project.toml
 └── README.md
-
+```
 ---
 
 ## Quick Start
