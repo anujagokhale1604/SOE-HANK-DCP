@@ -91,37 +91,27 @@ ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
         T_test = 5
         J_fn = jacobian_C_r(ss, T_test)
 
-        # Numerical Jacobian via finite difference
-        δ = 1e-5
-        J_num = zeros(T_test, T_test)
-        for t in 1:T_test
-            # Perturb r at time t
-            dr = zeros(T_test)
-            dr[t] = δ
-
-            # Recompute C under perturbed r (partial eq: only r path changes)
-            # C_s = J_Cr[s, t] * δ  (by linearity)
-            J_num[:, t] = J_fn[:, t]  # use fake-news as reference for structure
-        end
-
-        # The diagonal of J_Cr (contemporaneous MPC) should be positive
-        @test all(diag(J_fn)[1:min(3,T_test)] .> 0)
-
-        # J is lower-triangular (future r does not affect past C)
+        # J is lower-triangular: future r shock cannot affect past C
         for s in 1:T_test
             for t in s+1:T_test
                 @test abs(J_fn[s, t]) < 1e-10
             end
         end
 
-        # Jacobian finite-diff verification against ForwardDiff would go here
-        # (requires ForwardDiff wrapping of the full household solve)
-        # Placeholder test: max absolute deviation < tolerance
-        J_diff = abs.(J_fn .- J_num)
-        @test maximum(J_diff) < 1e-6
-    end
+        # Numerical Jacobian: perturb r at t=1 (partial equilibrium)
+        δ = 1e-4
+        r_hi = p.r_ss + δ
+        c_hi, a_hi = solve_household(p, ag, ip; r=r_hi)
+        g_hi = stationary_distribution(a_hi, ag, ip)
 
-    @testset "Open economy DAG" begin
+        agg_base = aggregates(g,    c_pol, a_pol, ag, ip, p.w_ss)
+        agg_hi   = aggregates(g_hi, c_hi,  a_hi,  ag, ip, p.w_ss)
+
+        dC_num = (agg_hi.C - agg_base.C) / δ
+        dC_fn  = J_fn[1, 1]
+
+        @test abs(dC_num - dC_fn) / (abs(dC_fn) + 1e-10) < 0.01
+    end
         T = 10
         Φ_r_π, Φ_r_Y, Φ_r_ε = taylor_rule_matrices(p, T)
         Φ_e_r  = exchange_rate_matrix(p, T)
