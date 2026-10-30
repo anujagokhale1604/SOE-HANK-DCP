@@ -2,7 +2,7 @@
 
 julia_version = "1.13.2"
 manifest_format = "2.1"
-project_hash = "6b48b33cff5da1bf58b290a3c218496db372498c"
+project_hash = "a854a5ee4d6be66898d095a77b095dcd93e997fb"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -785,7 +785,7 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "1.0.0"
 
 [[deps.SOEHANKDCP]]
-deps = ["Interpolations", "LinearAlgebra", "Parameters", "Plots", "SparseArrays", "Statistics"]
+deps = ["Interpolations", "LinearAlgebra", "Parameters", "Plots", "SparseArrays", "StaticArrays", "Statistics"]
 path = "."
 uuid = "ceb3721a-af4b-47b1-a01d-a8dba3287e61"
 version = "0.1.0"
@@ -831,10 +831,10 @@ version = "1.13.0"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "8a8a52f887f38d44014e24ee46b8a7311c625f6d"
+git-tree-sha1 = "eeafab08ae20c62c44c8399ccb9354a04b80db50"
 registries = "General"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.24"
+version = "1.9.7"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
