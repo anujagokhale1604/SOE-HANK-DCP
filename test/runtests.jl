@@ -112,6 +112,7 @@ ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
 
         @test abs(dC_num - dC_fn) / (abs(dC_fn) + 1e-10) < 0.01
     end
+            @testset "Open-economy DAG" begin
         T = 10
         Φ_r_π, Φ_r_Y, Φ_r_ε = taylor_rule_matrices(p, T)
         Φ_e_r  = exchange_rate_matrix(p, T)
