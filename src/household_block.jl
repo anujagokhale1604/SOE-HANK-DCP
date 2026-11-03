@@ -6,7 +6,6 @@ Endogenous Grid Method (EGM, Carroll 2006).
 """
 
 using LinearAlgebra
-using Interpolations
 
 @inline u(c::Float64, γ::Float64) = γ == 1.0 ? log(c) : c^(1-γ) / (1-γ)
 @inline u′(c::Float64, γ::Float64) = c^(-γ)
@@ -67,11 +66,18 @@ function egm_step(
         c_j_sorted  = c_j_sorted[unique_mask]
 
         # Linear interpolation with flat extrapolation outside range
-        itp = linear_interpolation(m_grid_j, c_j_sorted, extrapolation_bc=Flat())
+        # Manual linear interpolation with flat extrapolation (no Interpolations.jl needed)
+        interp_c = function(m_val)
+            m_val <= m_grid_j[1] && return c_j_sorted[1]
+            m_val >= m_grid_j[end] && return c_j_sorted[end]
+            k = searchsortedlast(m_grid_j, m_val)
+            t = (m_val - m_grid_j[k]) / (m_grid_j[k+1] - m_grid_j[k])
+            return c_j_sorted[k] + t * (c_j_sorted[k+1] - c_j_sorted[k])
+        end
 
         for i in 1:n_a
             m_i = (1 + r) * ag.a[i] + wy          # current cash-on-hand
-            c_i = Float64(itp(m_i))
+            c_i = Float64(interp_c(m_i))
             # Enforce: c ≥ ε, a' = m - c ≥ a_min
             c_i       = max(c_i, 1e-10)
             a_i       = m_i - c_i
