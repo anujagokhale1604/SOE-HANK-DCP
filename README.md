@@ -111,19 +111,13 @@ where $U = [\hat{Y}, \pi^H, r]$ are endogenous sequences and $Z = [\varepsilon^{
 
 *DCP (φ=1) vs PCP (φ=0)*
 
-![IRFs](plots/irf_monetary_shock.png)
-
 Under DCP, the expenditure-switching channel is **attenuated**: currency appreciation does not lower import prices, so the real income offset is smaller. The cash-flow squeeze therefore dominates — consumption contracts more persistently under DCP than PCP.
 
 ### Stationary Wealth Distribution
 
-![Distribution](plots/stationary_distribution.png)
-
 The endogenous wealth distribution shows significant mass at the borrowing constraint — these are the HtM households whose consumption is most sensitive to the mortgage cash-flow shock.
 
 ### Consumption Jacobian Heatmap
-
-![Jacobian](plots/jacobian_heatmap.png)
 
 $\mathcal{J}_{C,r}[s,t]$ is lower-triangular (future rate changes do not affect past consumption). The diagonal captures the contemporaneous MPC; off-diagonal entries capture the intertemporal propagation via the distribution dynamics.
 
