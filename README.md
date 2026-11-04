@@ -1,6 +1,5 @@
 [![CI](https://github.com/anujagokhale1604/SOE-HANK-DCP/actions/workflows/CI.yml/badge.svg)](https://github.com/anujagokhale1604/SOE-HANK-DCP/actions/workflows/CI.yml)
 
-[![CI](https://github.com/anujagokhale1604/SOE-HANK-DCP/actions/workflows/CI.yml/badge.svg)](https://github.com/anujagokhale1604/SOE-HANK-DCP/actions/workflows/CI.yml)
 
 # SOE-HANK-DCP
 
