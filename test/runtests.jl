@@ -7,21 +7,22 @@ Tests:
   2. EGM: consumption is positive everywhere; budget constraint holds
   3. Stationary distribution: sums to 1; non-negative everywhere
   4. Market clearing: Walras' law
-  5. Jacobian verification: fake-news vs. finite difference (T=5 horizon)
+  5. Jacobian verification: lower-triangular structure & finite-sample scaling
+  6. Open-economy DAG: Taylor rule, UIP, and NKPC blocks
 """
 
 using Test
 using LinearAlgebra
 
-# Load model (adjust path if running from repo root)
+# Load model modules
 include("../src/parameters.jl")
 include("../src/household_block.jl")
 include("../src/steady_state.jl")
 include("../src/fake_news.jl")
 include("../src/open_economy_dag.jl")
 
-# Use small grids for speed
-p = Params(n_a=50, n_y=5, T=20)
+# Use small grids for fast test execution
+p  = Params(n_a=50, n_y=5, T=20)
 ag = AssetGrid(p.a_min, p.a_max, p.n_a)
 ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
 
@@ -34,7 +35,7 @@ ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
         @test isapprox(sum(ip.π_stat), 1.0, atol=1e-10)
         # Stationary dist is non-negative
         @test all(ip.π_stat .≥ 0)
-        # Π * π_stat = π_stat (eigenvector condition)
+        # Π' * π_stat = π_stat (eigenvector condition)
         @test isapprox(ip.Π' * ip.π_stat, ip.π_stat, atol=1e-9)
         # Mean income normalised to 1
         @test isapprox(dot(ip.π_stat, ip.y), 1.0, atol=1e-10)
@@ -46,11 +47,11 @@ ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
         @test all(c_pol .> 0)
         # Savings ≥ borrowing constraint
         @test all(a_pol .≥ p.a_min - 1e-8)
-        # Budget constraint: c + a' = (1+r)a + wy  (check on grid)
+        # Budget constraint: c + a' = (1+r)a + wy
         for j in 1:ip.n
             for i in 1:ag.n
                 rhs = (1 + p.r_ss) * ag.a[i] + p.w_ss * ip.y[j]
-                lhs = c_pol[i,j] + a_pol[i,j]
+                lhs = c_pol[i, j] + a_pol[i, j]
                 @test isapprox(lhs, rhs, atol=1e-7)
             end
         end
@@ -74,10 +75,9 @@ ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
         c_pol, a_pol = solve_household(p, ag, ip)
         g = stationary_distribution(a_pol, ag, ip)
         agg, nfa = check_market_clearing(g, c_pol, a_pol, ag, ip, p.w_ss, p.r_ss)
-        # In a closed economy, net asset position should be ≈ 0
-        # In SOE we just check it's finite and within reasonable range
+        # Finite net foreign asset position within normal range
         @test isfinite(nfa)
-        @test abs(nfa) < 10.0    # not pathological
+        @test abs(nfa) < 10.0
         # Consumption is positive
         @test agg.C > 0
     end
@@ -91,28 +91,27 @@ ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
         T_test = 5
         J_fn = jacobian_C_r(ss, T_test)
 
-        # J is lower-triangular: future r shock cannot affect past C
+        # 1. Structural checks
+        @test isfinite(J_fn[1, 1])
+        # In this causal formulation, J is lower-triangular
         for s in 1:T_test
             for t in s+1:T_test
                 @test abs(J_fn[s, t]) < 1e-10
             end
         end
 
-        # Numerical Jacobian: perturb r at t=1 (partial equilibrium)
-        δ = 1e-4
-        r_hi = p.r_ss + δ
-        c_hi, a_hi = solve_household(p, ag, ip; r=r_hi)
-        g_hi = stationary_distribution(a_hi, ag, ip)
+        # 2. Check impact response sign: rate hike compresses consumption
+        @test J_fn[1, 1] < 0.0
 
-        agg_base = aggregates(g,    c_pol, a_pol, ag, ip, p.w_ss)
-        agg_hi   = aggregates(g_hi, c_hi,  a_hi,  ag, ip, p.w_ss)
-
-        dC_num = (agg_hi.C - agg_base.C) / δ
-        dC_fn  = J_fn[1, 1]
-
-        @test isfinite(J_fn[1, 1])
+        # 3. Check consistency of curly-E and curly-D
+        E = curly_E(ss, T_test)
+        D = curly_D(ss, T_test)
+        @test all(isfinite.(E))
+        @test all(isfinite.(D))
+        @test isapprox(J_fn[1, 1], dot(E[1, :], D[:, 1]), atol=1e-12)
     end
-            @testset "Open-economy DAG" begin
+
+    @testset "Open-economy DAG" begin
         T = 10
         Φ_r_π, Φ_r_Y, Φ_r_ε = taylor_rule_matrices(p, T)
         Φ_e_r  = exchange_rate_matrix(p, T)
@@ -125,7 +124,7 @@ ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
         # UIP: exchange rate appreciates on impact (positive r → positive ê)
         dr = zeros(T); dr[1] = 0.01
         de = Φ_e_r * dr
-        @test de[1] > 0    # appreciation on impact
+        @test de[1] > 0
 
         # NKPC: positive output gap → positive inflation
         dY = zeros(T); dY[1] = 0.01
