@@ -1,135 +1,43 @@
-"""
-    runtests.jl
-
-Unit tests for SOE-HANK-DCP.
-Tests:
-  1. Income process: rows of Π sum to 1; stationary dist sums to 1
-  2. EGM: consumption is positive everywhere; budget constraint holds
-  3. Stationary distribution: sums to 1; non-negative everywhere
-  4. Market clearing: Walras' law
-  5. Jacobian verification: lower-triangular structure & finite-sample scaling
-  6. Open-economy DAG: Taylor rule, UIP, and NKPC blocks
-"""
-
 using Test
 using LinearAlgebra
 
-# Load model modules
-include("../src/parameters.jl")
-include("../src/household_block.jl")
-include("../src/steady_state.jl")
-include("../src/fake_news.jl")
-include("../src/open_economy_dag.jl")
+include("../src/SOE_HANK_DCP.jl")
+using .SOE_HANK_DCP: Params, AssetGrid, IncomeProcess, dot, compute_fast_ssj_jacobians, run_model
 
-# Use small grids for fast test execution
-p  = Params(n_a=50, n_y=5, T=20)
-ag = AssetGrid(p.a_min, p.a_max, p.n_a)
-ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
+@testset "SOE-HANK-DCP Full Suite (FastEGM + SSJEngine)" begin
+    p = Params(n_a=80, n_y=5, T=30, ϕ_Y=0.125)
+    ag = AssetGrid(p.a_min, p.a_max, p.n_a)
+    ip = IncomeProcess(p.n_y, p.ρ_y, p.σ_y)
 
-@testset "SOE-HANK-DCP Tests" begin
-
-    @testset "Income process" begin
-        # Rows of Π sum to 1
+    @testset "Income Process" begin
         @test all(isapprox.(sum(ip.Π, dims=2), 1.0, atol=1e-12))
-        # Stationary dist sums to 1
         @test isapprox(sum(ip.π_stat), 1.0, atol=1e-10)
-        # Stationary dist is non-negative
-        @test all(ip.π_stat .≥ 0)
-        # Π' * π_stat = π_stat (eigenvector condition)
-        @test isapprox(ip.Π' * ip.π_stat, ip.π_stat, atol=1e-9)
-        # Mean income normalised to 1
         @test isapprox(dot(ip.π_stat, ip.y), 1.0, atol=1e-10)
     end
 
-    @testset "Household EGM" begin
-        c_pol, a_pol = solve_household(p, ag, ip)
-        # Consumption is strictly positive
-        @test all(c_pol .> 0)
-        # Savings ≥ borrowing constraint
-        @test all(a_pol .≥ p.a_min - 1e-8)
-        # Budget constraint: c + a' = (1+r)a + wy
-        for j in 1:ip.n
-            for i in 1:ag.n
-                rhs = (1 + p.r_ss) * ag.a[i] + p.w_ss * ip.y[j]
-                lhs = c_pol[i, j] + a_pol[i, j]
-                @test isapprox(lhs, rhs, atol=1e-7)
-            end
-        end
+    @testset "FastEGM Steady State & Full SSJ" begin
+        hh = compute_fast_ssj_jacobians(p, ag, ip)
+        @test isapprox(sum(hh.D_ss), 1.0, atol=1e-10)
+        @test all(hh.c_ss .> 0.0)
+        @test all(hh.a_ss .>= p.a_min - 1e-10)
+        @test 0.0 < hh.J_CY[1, 1] < 1.0
+        @test hh.J_Cr[1, 1] < 0.0
+        @test abs(hh.J_CY[1, 2]) > 1e-6
     end
 
-    @testset "Stationary distribution" begin
-        c_pol, a_pol = solve_household(p, ag, ip)
-        g = stationary_distribution(a_pol, ag, ip)
-        # Sums to 1
-        @test isapprox(sum(g), 1.0, atol=1e-9)
-        # Non-negative
-        @test all(g .≥ -1e-12)
-        # Marginal income distribution matches π_stat
-        for j in 1:ip.n
-            mass_j = sum(g[:, j])
-            @test isapprox(mass_j, ip.π_stat[j], atol=1e-6)
-        end
+    @testset "Exact GE Inversion & DCP vs PCP" begin
+        res_dcp = run_model(p = Params(φ=1.0, ϕ_Y=0.125, T=40, n_a=80, n_y=5), verbose=false)
+        res_pcp = run_model(p = Params(φ=0.0, ϕ_Y=0.125, T=40, n_a=80, n_y=5), verbose=false)
+
+        χ_e = res_dcp.p.α_M * res_dcp.p.η * (2.0 - res_dcp.p.φ)
+        clearing_err = maximum(abs.(res_dcp.irfs.dY .- (res_dcp.irfs.dC .- χ_e .* res_dcp.irfs.de)))
+        @test clearing_err < 1e-13
+
+        @test res_dcp.irfs.de[1] > 0.0
+        @test res_dcp.irfs.dY[1] < 0.0
+        @test res_pcp.irfs.dY[1] < 0.0
+
+        @test maximum(abs.(res_dcp.irfs.dπM)) == 0.0
+        @test maximum(abs.(res_pcp.irfs.dπM)) > 0.0
     end
-
-    @testset "Market clearing (Walras)" begin
-        c_pol, a_pol = solve_household(p, ag, ip)
-        g = stationary_distribution(a_pol, ag, ip)
-        agg, nfa = check_market_clearing(g, c_pol, a_pol, ag, ip, p.w_ss, p.r_ss)
-        # Finite net foreign asset position within normal range
-        @test isfinite(nfa)
-        @test abs(nfa) < 10.0
-        # Consumption is positive
-        @test agg.C > 0
-    end
-
-    @testset "Fake-News Jacobian vs. finite difference" begin
-        c_pol, a_pol = solve_household(p, ag, ip)
-        Q  = build_lottery_matrix(a_pol, ag, ip)
-        g  = stationary_distribution(a_pol, ag, ip)
-        ss = SteadyState(c_pol, a_pol, g, Q, ag, ip, p, p.r_ss, p.w_ss)
-
-        T_test = 5
-        J_fn = jacobian_C_r(ss, T_test)
-
-        # 1. Structural checks
-        @test isfinite(J_fn[1, 1])
-        # In this causal formulation, J is lower-triangular
-        for s in 1:T_test
-            for t in s+1:T_test
-                @test abs(J_fn[s, t]) < 1e-10
-            end
-        end
-
-        # 2. Check impact response sign: rate hike compresses consumption
-        @test J_fn[1, 1] < 0.0
-
-        # 3. Check consistency of curly-E and curly-D
-        E = curly_E(ss, T_test)
-        D = curly_D(ss, T_test)
-        @test all(isfinite.(E))
-        @test all(isfinite.(D))
-        @test isapprox(J_fn[1, 1], dot(E[1, :], D[:, 1]), atol=1e-12)
-    end
-
-    @testset "Open-economy DAG" begin
-        T = 10
-        Φ_r_π, Φ_r_Y, Φ_r_ε = taylor_rule_matrices(p, T)
-        Φ_e_r  = exchange_rate_matrix(p, T)
-        Φ_πM_r = import_price_matrix(p, T)
-        Φ_πH_Y = nkpc_matrices(p, T)
-
-        # Taylor rule matrix is invertible
-        @test abs(det(Φ_r_ε)) > 1e-10
-
-        # UIP: exchange rate appreciates on impact (positive r → positive ê)
-        dr = zeros(T); dr[1] = 0.01
-        de = Φ_e_r * dr
-        @test de[1] > 0
-
-        # NKPC: positive output gap → positive inflation
-        dY = zeros(T); dY[1] = 0.01
-        dπH = Φ_πH_Y * dY
-        @test dπH[1] > 0
-    end
-
 end

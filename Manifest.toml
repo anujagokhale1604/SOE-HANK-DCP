@@ -2,7 +2,7 @@
 
 julia_version = "1.13.2"
 manifest_format = "2.1"
-project_hash = "68eb4c254e18db351f57eb3eca8490dcdda2ae59"
+project_hash = "f75fabb10322c4d845d8db77d7a5696fc580d879"
 
 [[deps.AliasTables]]
 deps = ["PtrArrays", "Random"]
@@ -174,6 +174,14 @@ git-tree-sha1 = "d9d3cd382f2c999f684e6bfa4039fcc16c153b6f"
 registries = "General"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "9.0.2+0"
+
+[[deps.FastEGM]]
+deps = ["BenchmarkTools"]
+git-tree-sha1 = "3938f22d6d39ebe78e89fde35479180c76baec49"
+repo-rev = "main"
+repo-url = "https://github.com/anujagokhale1604/Fast-EGM.jl"
+uuid = "b7a2d480-1a2b-4e8c-9a11-5f6e7c8d9e0f"
+version = "0.1.0"
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
@@ -737,7 +745,7 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "1.0.0"
 
 [[deps.SOEHANKDCP]]
-deps = ["BenchmarkTools", "LinearAlgebra", "Parameters", "Plots", "SparseArrays", "Statistics", "Test"]
+deps = ["BenchmarkTools", "FastEGM", "LinearAlgebra", "Parameters", "Plots", "SparseArrays", "Statistics", "Test"]
 path = "."
 uuid = "ceb3721a-af4b-47b1-a01d-a8dba3287e61"
 version = "0.1.0"

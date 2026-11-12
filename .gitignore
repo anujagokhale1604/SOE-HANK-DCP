@@ -1,1 +1,6 @@
 .DS_Store
+
+# OS & Archives
+.DS_Store
+*.zip
+*.tar.gz
