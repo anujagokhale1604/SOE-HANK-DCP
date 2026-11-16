@@ -1,14 +1,9 @@
 # SOE-HANK-DCP
 
-<<<<<<< Updated upstream
 A Small Open Economy Heterogeneous-Agent New Keynesian (SOE-HANK) model with **Dominant Currency Pricing (DCP)** vs. **Producer Currency Pricing (PCP)**, solved in Julia using the **Sequence-Space Jacobian (SSJ)** framework of Auclert, Bardóczy, Rognlie, and Straub (2021, *Econometrica*).
-=======
-A Small Open Economy Heterogeneous-Agent New Keynesian (SOE-HANK) model with **Dominant Currency Pricing (DCP)** vs. **Producer Currency Pricing (PCP)**, solved in Julia using the **Sequence-Space Jacobian (SSJ)** framework of Auclert et al. (2021).
->>>>>>> Stashed changes
 
-## Architecture
+---
 
-<<<<<<< Updated upstream
 ## Model & Computational Architecture
 
 1. **Zero-Allocation Household Block (`FastEGM.jl`):**
@@ -102,8 +97,3 @@ SOE-HANK-DCP/
 - Gopinath, G., Boz, E., Casas, C., Díez, F. J., Gourinchas, P.-O., & Plagborg-Møller, M. (2020). *Dominant Currency Paradigm*. **American Economic Review**, 110(3), 677–719.
 - Carroll, C. D. (2006). *The Method of Endogenous Gridpoints for Solving Dynamic Stochastic Optimization Problems*. **Economics Letters**, 91(3), 312–320.
 - Young, E. R. (2010). *Solving the Incomplete Markets Model with Aggregate Uncertainty Using the Krusell–Smith Algorithm and Non-Stochastic Simulations*. **Journal of Economic Dynamics and Control**, 34(1), 36–41.
-=======
-1. **Zero-Allocation Household Block (`FastEGM.jl`):** Solves incomplete-markets consumption-savings with Rouwenhorst income risk and borrowing constraints via Carroll's (2006) EGM and Young's (2010) non-stochastic lottery distribution.
-2. **Full Non-Toeplitz SSJ (`src/SSJEngine.jl`):** Computes full $T \times T$ household Jacobians via the Fake-News algorithm, capturing both distributional transitions and Euler anticipation effects.
-3. **Open-Economy DAG & Exact GE (`src/open_economy_dag.jl`):** Solves the coupled Taylor rule, UIP, DCP/PCP pricing, and NKPC system via direct matrix inversion ($H_U \cdot dU = -H_Z \cdot dZ$) to machine precision.
->>>>>>> Stashed changes
