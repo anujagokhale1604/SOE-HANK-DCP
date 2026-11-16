@@ -1,5 +1,6 @@
 # SOE-HANK-DCP: Sequence-Space Jacobians in a Small Open Economy HANK Model under Dominant Currency Pricing
 
+[![CI](https://github.com/anujagokhale1604/SOE-HANK-DCP/actions/workflows/CI.yml/badge.svg)](https://github.com/anujagokhale1604/SOE-HANK-DCP/actions/workflows/CI.yml)
 [![Interactive Dashboard](https://img.shields.io/badge/Interactive_Dashboard-GitHub_Pages-1e3a8a?style=for-the-badge)](https://anujagokhale1604.github.io/SOE-HANK-DCP/)
 [![Technical Note](https://img.shields.io/badge/Technical_Note-PDF-9f1239?style=for-the-badge)](https://anujagokhale1604.github.io/SOE-HANK-DCP/technical_note.pdf)
 [![Companion App](https://img.shields.io/badge/Empirical_Inflation_App-Streamlit-065f46?style=for-the-badge)](https://pink-panther-inflation.streamlit.app/)
