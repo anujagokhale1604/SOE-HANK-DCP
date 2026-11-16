@@ -41,3 +41,20 @@ using .SOE_HANK_DCP: Params, AssetGrid, IncomeProcess, dot, compute_fast_ssj_jac
         @test maximum(abs.(res_pcp.irfs.dπM)) > 0.0
     end
 end
+
+@testset "US Fed Spillover Shock (solve_foreign_shock)" begin
+    res_dcp = SOE_HANK_DCP.run_model(p = SOE_HANK_DCP.Params(φ=1.0, T=40, n_a=100, n_y=3), verbose=false)
+    res_pcp = SOE_HANK_DCP.run_model(p = SOE_HANK_DCP.Params(φ=0.0, T=40, n_a=100, n_y=3), verbose=false)
+    dr_star = [0.01 * (0.8^(t-1)) for t in 1:40]
+
+    sp_dcp = SOE_HANK_DCP.solve_foreign_shock(res_dcp.ge, dr_star)
+    sp_pcp = SOE_HANK_DCP.solve_foreign_shock(res_pcp.ge, dr_star)
+
+    # Foreign tightening depreciates domestic currency on impact (de < 0)
+    @test sp_dcp.de[1] < 0.0
+    @test sp_pcp.de[1] < 0.0
+
+    # Under DCP (φ=1), import price pass-through is zero (dπM == 0); under PCP (φ=0), depreciation raises import inflation
+    @test maximum(abs.(sp_dcp.dπM)) < 1e-14
+    @test sp_pcp.dπM[1] > 0.0
+end

@@ -52,7 +52,6 @@ function import_price_matrix(p::Params, T::Int)
     L  = lag_matrix(T)
     Φ_e_r = exchange_rate_matrix(p, T)
     Φ_Δe_r = (Id .- L) * Φ_e_r
-    # Domestic currency appreciation (Δe > 0) lowers domestic-currency import prices under PCP (φ=0)
     Φ_πM_r = -(1.0 - p.φ) .* Φ_Δe_r
     return Φ_πM_r
 end
@@ -90,9 +89,6 @@ function solve_ge(ge::GESystem, dε_MP::Vector{Float64})
     T = ge.T
     Id = I_T(T)
     α_M = ge.p.α_M
-
-    # Gopinath et al. (2020) expenditure-switching sensitivity:
-    # Under PCP (φ=0), both imports & exports switch (2*α_M*η); under DCP (φ=1), export USD prices are sticky (α_M*η)
     χ_e = α_M * ge.p.η * (2.0 - ge.p.φ)
 
     M_YY = Id .- ge.J_CY
@@ -113,6 +109,38 @@ function solve_ge(ge::GESystem, dε_MP::Vector{Float64})
     de  = ge.Φ_e_r * dr
     dπH = ge.Φ_πH_Y * dY
     dπM = ge.Φ_πM_r * dr
+    dπ  = (1.0 - α_M) .* dπH .+ α_M .* dπM
+
+    return (; dr, dC, dY, dπ, dπH, dπM, de)
+end
+
+function solve_foreign_shock(ge::GESystem, dr_star::Vector{Float64})
+    T = ge.T
+    Id = I_T(T)
+    α_M = ge.p.α_M
+    χ_e = α_M * ge.p.η * (2.0 - ge.p.φ)
+
+    # UIP: de = Φ_e_r * (dr - dr_star)
+    # Goods clearing: dY = dC - χ_e * de = J_CY dY + (J_Cr - χ_e Φ_e_r) dr + χ_e Φ_e_r dr_star
+    # Import inflation: dπM = Φ_πM_r * (dr - dr_star)
+    M_YY = Id .- ge.J_CY
+    M_Yr = -(ge.J_Cr .- χ_e .* ge.Φ_e_r)
+    M_rY = ge.Φ_r_Y .+ (1.0 - α_M) .* (ge.Φ_r_π * ge.Φ_πH_Y)
+    M_rr = Id .+ α_M .* (ge.Φ_r_π * ge.Φ_πM_r)
+
+    H_U = [M_YY M_Yr;
+           M_rY M_rr]
+    rhs = [χ_e .* (ge.Φ_e_r * dr_star);
+           α_M .* (ge.Φ_r_π * (ge.Φ_πM_r * dr_star))]
+
+    sol = inv(H_U) * rhs
+    dY  = sol[1:T]
+    dr  = sol[T+1:2T]
+
+    dC  = ge.J_Cr * dr .+ ge.J_CY * dY
+    de  = ge.Φ_e_r * (dr .- dr_star)
+    dπH = ge.Φ_πH_Y * dY
+    dπM = ge.Φ_πM_r * (dr .- dr_star)
     dπ  = (1.0 - α_M) .* dπH .+ α_M .* dπM
 
     return (; dr, dC, dY, dπ, dπH, dπM, de)

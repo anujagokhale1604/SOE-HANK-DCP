@@ -1,18 +1,3 @@
-"""
-    SOE_HANK_DCP.jl
-
-Main module: Small Open Economy HANK with Dominant Currency Pricing.
-
-Architecture:
-  - Households: HANK with idiosyncratic income risk, solved via zero-allocation FastEGM.jl
-  - Steady-state distribution: Young (2010) non-stochastic lottery method (FastEGM.jl)
-  - Aggregate dynamics: Full non-Toeplitz Sequence-Space Jacobians (Auclert et al. 2021)
-  - Open-economy block: DCP import pricing, UIP exchange rate, NKPC
-  - Monetary shock: 100bp Taylor-rule-based interest rate hike
-
-Author: Anuja A. Gokhale
-"""
-
 module SOE_HANK_DCP
 
 using LinearAlgebra
@@ -24,7 +9,7 @@ export Params, AssetGrid, IncomeProcess
 export solve_household
 export stationary_distribution, aggregates, check_market_clearing
 export SteadyState, jacobian_C_r, jacobian_C_Y
-export GESystem, solve_ge
+export GESystem, solve_ge, solve_foreign_shock
 export compute_fast_ssj_jacobians, run_model
 
 include("parameters.jl")
@@ -36,13 +21,6 @@ include("open_economy_dag.jl")
 
 using .SSJEngine: compute_household_jacobians
 
-"""
-    compute_fast_ssj_jacobians(p, ag, ip)
-
-Solves the steady-state household problem and ergodic distribution via FastEGM.jl,
-then computes the full T x T Sequence-Space Jacobians (J_Cr, J_CY) via the
-Auclert et al. (2021) Fake-News algorithm.
-"""
 function compute_fast_ssj_jacobians(p::Params, ag::AssetGrid, ip::IncomeProcess)
     fp = ModelParams(
         p.β, p.γ, 1.0 + p.r_ss, p.w_ss, p.a_min,
@@ -60,15 +38,9 @@ function compute_fast_ssj_jacobians(p::Params, ag::AssetGrid, ip::IncomeProcess)
     solve_stationary_dist!(D_ss, dws_ss, a_ss, fp)
 
     J = compute_household_jacobians(c_ss, a_ss, D_ss, dws_ss, fp; T=p.T)
-    # In baseline SOE production Y = w * N with N = 1 (unit-elastic labor supply), dY = dw
     return (; c_ss, a_ss, D_ss, J_Cr = J.J_CR, J_CY = J.J_Cw)
 end
 
-"""
-    run_model(; p, verbose)
-
-Full model pipeline using FastEGM.jl + exact Sequence-Space GE inversion.
-"""
 function run_model(; p::Params = Params(), verbose::Bool = true)
     verbose && println("=== SOE-HANK-DCP Model (FastEGM + Full SSJ) ===")
 
